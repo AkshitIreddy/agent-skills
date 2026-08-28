@@ -14,9 +14,8 @@ same pattern as `<domain>-agent-skills`.
 
 ## Evidence
 
-The decision was based on the open
-[Agent Skills specification](https://agentskills.io/specification), official
-collections and documentation from
+The decision was based on the open Agent Skills format, official collections
+and documentation from
 [OpenAI](https://github.com/openai/skills),
 [Anthropic](https://github.com/anthropics/skills),
 [Vercel](https://github.com/vercel-labs/agent-skills),

@@ -3,11 +3,10 @@
 Reusable, opinionated workflows for AI coding agents that care about craft,
 evidence, safety, and actually finishing the work.
 
-[![Agent Skills](https://img.shields.io/badge/format-Agent%20Skills-111827)](https://agentskills.io)
 [![License: MIT](https://img.shields.io/badge/license-MIT-16a34a.svg)](LICENSE)
 
 This repository is a public collection of portable
-[`SKILL.md`](https://agentskills.io/specification) packages. Each skill teaches
+`SKILL.md` packages. Each skill teaches
 an agent a focused way of working: how to verify visual changes from rendered
 pixels, diagnose hard bugs through falsifiable experiments, build richer
 interfaces, keep commits atomic, or pause before communicating externally.
