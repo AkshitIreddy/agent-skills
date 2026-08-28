@@ -1,0 +1,6 @@
+interface:
+  display_name: "Adversarial Refinement Loop"
+  short_description: "Persistent research, audit, fix, and verify loop"
+  default_prompt: "Use $adversarial-refinement-loop to keep auditing, researching, improving, and verifying this work until I tell you to stop."
+policy:
+  allow_implicit_invocation: false

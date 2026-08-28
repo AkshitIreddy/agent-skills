@@ -1,0 +1,4 @@
+interface:
+  display_name: "External Communication Approval"
+  short_description: "Require approval before directly messaging anyone"
+  default_prompt: "Use $require-external-communication-approval before directly sending, posting, or replying to another person; do not block authorized operational work."
