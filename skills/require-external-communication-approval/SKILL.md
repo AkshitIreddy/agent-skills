@@ -1,6 +1,6 @@
 ---
 name: require-external-communication-approval
-description: Require explicit user approval immediately before directly contacting or replying to another person through GitHub comments or reviews, Slack, email, chat, issue trackers, reactions, mentions, assignments, or reviewer requests. Use whenever Codex may send a human-facing message. Do not block otherwise-authorized repository, CI, merge, release, deployment, settings, or infrastructure operations merely because they may create automatic notifications.
+description: Check authorization before sending a direct message, review, comment, or other human-facing communication.
 ---
 
 # Require External Communication Approval
@@ -33,7 +33,13 @@ communication confirmation for:
 Automatic service notifications caused by these operational actions do not
 count as Codex directly messaging another person.
 
-## Approval workflow for direct messages
+Before asking, check whether the current request or prior session instructions
+already explicitly authorize this exact communication. Existing authorization
+persists; ask only for missing approval or a material change to recipients,
+destination, or content. Immediately before sending, verify the planned action
+still matches that authorization.
+
+## Approval workflow when authorization is missing
 
 1. Draft the proposed communication without sending it.
 2. Show the user the destination, recipients, and exact text or action.

@@ -1,18 +1,17 @@
 ---
 name: build-without-fear
-description: Implement exhaustive, production-grade solutions without minimizing code size. Use when the user explicitly asks for a large, ambitious, comprehensive, defensive, possibility-covering implementation; requests thousands of lines or says not to fear complexity; or when a repeatedly failing UI, animation, audio, rendering, state-transition, or integration problem needs a full subsystem rather than another narrow patch.
+description: Design a complete subsystem when requested or when recurring defects require explicit state, ownership, and recovery.
 ---
 
 # Build Without Fear
 
-Build the complete system the problem requires. Do not optimize for a small diff,
-few files, low line count, or a clever abstraction. Optimize for explicit state
-coverage, predictable transitions, debuggability, and a result that survives the
-real product's full possibility space.
+Build the system required by the requested behavior. Base architectural depth
+on observed failure modes and supported product states. Code size is neither
+a target nor a constraint. Keep routine component changes focused.
 
 ## Start from the state space
 
-Write down the meaningful dimensions before coding:
+Identify the dimensions relevant to this subsystem:
 
 - lifecycle states, transitions, interruptions, retries, cancellation and teardown;
 - success, loading, empty, stale, partial, error, fallback and recovery states;
@@ -21,13 +20,14 @@ Write down the meaningful dimensions before coding:
 - persisted, cached, derived, live and presentation state;
 - ownership boundaries and which subsystem is authoritative at each instant.
 
-Turn this into explicit types, state machines, scene descriptions, policies, and
-contracts. Avoid boolean piles whose combinations are accidental.
+Represent relevant invariants through types, state machines, or contracts as
+useful. Avoid boolean piles whose combinations are accidental.
 
 ## Prefer a subsystem over patches
 
-When several bugs share a boundary, replace the boundary with one coherent
-pipeline. Include as many well-named modules as necessary:
+When evidence shows several bugs share a boundary, repair its ownership or
+transitions coherently. Replace it only when a focused correction is inadequate.
+Choose the modules the subsystem needs from concerns such as:
 
 1. domain types and invariants;
 2. state machine or coordinator;
@@ -39,9 +39,9 @@ pipeline. Include as many well-named modules as necessary:
 8. cleanup and resource ownership;
 9. compatibility and migration paths.
 
-Keep business rules separate from framework adapters. Make every public operation
-return or expose enough information to distinguish played from queued, skipped,
-blocked, failed, superseded, cancelled, and completed.
+Keep business rules separate from framework adapters. Expose the operation
+states callers actually need to distinguish, such as queued, failed, cancelled,
+or completed.
 
 ## Write explicit code
 
@@ -55,8 +55,8 @@ blocked, failed, superseded, cancelled, and completed.
 - Preserve extension points for plausible product variants already visible in the
   codebase; do not invent unrelated features merely to increase size.
 
-Thousands of lines are acceptable. Repeated filler, copy-paste branches, unused
-abstractions and speculative architecture are not. Every additional line must
+Implementation size should follow the actual state space. Avoid filler, unused
+abstractions, and speculative architecture. Every additional line should
 cover a real state, make ownership explicit, improve craft, or make failure
 recoverable.
 

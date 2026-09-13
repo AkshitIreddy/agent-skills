@@ -1,6 +1,6 @@
 ---
 name: adversarial-refinement-loop
-description: "Run a persistent adversarial research, critique, implementation, and verification loop until the user stops it. Invoke only when the user explicitly asks for this skill or an indefinite refinement loop."
+description: "Run an indefinite critique, improvement, and verification loop when the user explicitly requests this mode."
 ---
 
 # Adversarial Refinement Loop
@@ -12,8 +12,9 @@ ends the run. A pass with no high-confidence defects is evidence to change the
 review lens; it is not a completion condition.
 
 An ordinary response boundary, context compaction, temporary tool failure,
-exhausted lens, or clean result is a checkpoint, not completion. When the host
-supports persistent goals or automatic continuation, use it. If a hard host
+exhausted lens, or clean result is a checkpoint, not completion. Use a host goal
+or scheduled continuation only when the user has explicitly requested the
+corresponding mechanism; ordinary loop execution needs neither. If a hard host
 stop is unavoidable, label the run incomplete, preserve the exact ledger and
 next lens, and resume on the next supported continuation. A blocker ends the
 active run only when no safe, useful pass remains under any lens after
@@ -53,7 +54,7 @@ verification, and unresolved hypotheses. For every pass:
    uniform, weakly aligned, poorly paced, misleading, or meaningfully
    improvable. Translate every useful reaction into an observable detail and a
    candidate change.
-3. **Research the active problem online.** Derive each query from a concrete
+3. **Research when evidence could change the active decision.** Derive queries from a concrete
    observation or unresolved ledger hypothesis. Search current, credible
    sources for better methods, design references, implementation techniques,
    and failure patterns suited to the current lens. Prefer primary sources for
@@ -68,16 +69,14 @@ verification, and unresolved hypotheses. For every pass:
 5. **Implement a coherent improvement cluster.** Fix causes rather than piling
    isolated patches onto symptoms. Trace every edit to evidence and an expected
    benefit; preserve the baseline when a variant is not demonstrably better.
-   Keep uncertain brand, voice, factual content, licensing, dependency, and
-   architectural changes as hypotheses until authorized. Preserve the user's
+   Resolve routine reversible choices from the brief. Seek input for changes
+   that materially alter scope, rights, commitments, or product direction. Preserve the user's
    scope, working tree, runtime behavior, and authorization boundaries.
-6. **Verify pixels and behavior.** For every relevant page, viewport, and
-   interaction state under review, capture 4–6 overlapping close-ups that
-   collectively cover the artifact, open and analyze each image immediately,
-   and only then inspect the full frame. After changes, repeat affected
-   close-ups before the new full frame. Exercise motion in real time where
-   possible and run proportional interaction, responsive, accessibility,
-   performance, and regression checks.
+6. **Verify the active improvement.** Inspect affected pixels and behavior.
+   For a screen audit, inspect readable close-ups and the full composition;
+   a component correction needs only the affected surface and states. Use the
+   available visual-verification workflow for capture and motion limitations.
+   Run checks proportional to the actual changes and unresolved concerns.
 7. **Commission a fresh adversarial re-review.** Prefer an independent subagent
    that receives the current artifact and evaluation criteria without being
    coached toward the intended fix. Integrate supported findings, update the

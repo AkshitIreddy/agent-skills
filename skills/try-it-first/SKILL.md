@@ -1,57 +1,39 @@
 ---
 name: try-it-first
-description: Prefer running the thing to predicting it. Use when a question could be settled by a quick experiment — UI behaviour, rendering, timing, an API's real shape, whether a bug reproduces — and especially when you notice yourself reasoning at length without having tried anything.
+description: Use a quick experiment or rendered prototype to resolve uncertain behavior or compare design alternatives.
 ---
 
-# Try it, then think about the result
+# Try it and inspect the result
 
-Thinking is not the problem. Thinking *instead of looking* is. The failure this
-prevents is a long confident chain of reasoning about something that could have
-been settled in ninety seconds by running it.
+Run the smallest safe experiment that answers the actual question. Use existing
+harnesses and real project inputs where practical. A scratch probe is enough
+when a permanent test would add no value.
 
-## When an experiment beats an argument
+Choose an observable outcome: actual API shape, elapsed time, persisted state,
+rendered appearance, or a reproducible failure. Inspect surprising results for
+harness mistakes before building on them. Distinguish observation from its
+explanation, then test the proposed cause.
 
-- **Does this look right?** — render it and open the image.
-- **Does this bug reproduce?** — reproduce it before theorising about the cause.
-  Half of reported bugs are somewhere other than where they sound like.
-- **Is this actually slow?** — measure it. "Should be fast" is not a finding.
-- **What does this API really return?** — call it with real input.
-- **Did my change do anything?** — capture before and after and compare them.
+## Compare a design direction
 
-Write the smallest thing that answers the question: a scratch script, a
-Playwright probe, a specimen page, a `console.log` of the real value. It is
-throwaway — it does not need to be good, it needs to be true.
+For an aesthetic choice, produce a few meaningful alternatives and compare
+them at the intended scale. Keep presentation comparable. Judge subject fit,
+hierarchy, legibility, and the desired experience. A fixed variant count or
+number of rounds is unnecessary.
 
-## Then think
+Research an unfamiliar technique when it would change the experiment; a
+reversible prototype can proceed alongside research. A specimen board supports
+a design decision. Integrate the chosen result into the actual product before
+claiming the requested implementation is complete.
 
-An experiment gives you a fact, not an explanation. Once you have the fact,
-reason about *why* — and reason hard, because that is what turns "the handle
-flickers" into "the handle is parented inside the element it tracks, so hovering
-it removes the hover". A fix aimed at a symptom you never explained usually
-misses.
+## Respect the evidence boundary
 
-The sequence is: try it → get a fact → explain the fact → fix the cause → try
-it again.
+A still cannot establish smooth motion, and offline sound metrics cannot
+establish live playback or pleasantness. For temporal defects, exercise normal,
+rapid, and interrupted paths and inspect state ordering. A non-reproduction
+does not invalidate a user's repeatable observation.
 
-For transient motion, one run is not a fact of absence. Automated input and
-frame capture can miss the faulty interval or change its timing. Exercise slow,
-fast, interrupted and repeated paths, then trace the transition's code and
-state ordering. Record “not reproduced under this probe” rather than “fixed”
-when the user's real-time observation still disagrees.
-
-## Speed
-
-Bias toward the fast loop. Three quick experiments usually beat one long
-deliberation, and they compound — each result narrows the next. Do not gold-plate
-the probe, do not build a framework to answer one question, and do not spend
-longer setting up the measurement than the measurement will save.
-
-Two things are still worth slowing down for: an action that is hard to undo, and
-a result that surprises you. A surprising result is either a real discovery or a
-broken experiment, and it is worth knowing which before you build on it.
-
-## Report what you saw
-
-Say what you ran and what came back, with numbers where you have them. "Verified
-by looking" and "should work" are different claims, and only one of them is
-worth anything to the person reading it.
+Keep the setup proportional to the question. Think through costly or
+hard-to-reverse actions before executing them. Stop experimenting when the
+decision is supported and continue the requested implementation or verification.
+Report what ran, what was observed, and any unresolved limitation.

@@ -6,17 +6,20 @@ attribution.
 
 ## `skills/diagnosing-bugs`
 
-The core `SKILL.md` and human-in-the-loop shell template come from
+The original debugging workflow was adapted from
 [Matt Pocock's skills repository](https://github.com/mattpocock/skills/tree/main/skills/engineering/diagnosing-bugs).
-They are redistributed under the MIT License. The upstream copyright and
+The adapted instructions are redistributed under the MIT License. The former
+interactive shell template has been retired. The upstream copyright and
 license text are preserved in
 [`skills/diagnosing-bugs/LICENSE.txt`](skills/diagnosing-bugs/LICENSE.txt).
 
 ## `skills/frontend-design`
 
-This skill comes from Anthropic's public
+This skill is modified from Anthropic's public
 [frontend-design skill](https://github.com/anthropics/skills/tree/main/skills/frontend-design)
-and is redistributed under Apache License 2.0. Its complete license is
+and is redistributed under Apache License 2.0. The September 2026 revision
+changes its routing and task scope and combines original craft guidance.
+Modification notices are included in the entrypoint and references. Its complete license is
 preserved in
 [`skills/frontend-design/LICENSE.txt`](skills/frontend-design/LICENSE.txt).
 
@@ -24,8 +27,12 @@ preserved in
 
 This skill is authored by Vercel and comes from
 [`vercel-labs/agent-skills`](https://github.com/vercel-labs/agent-skills/tree/main/skills/web-design-guidelines).
-The upstream repository declares the collection MIT-licensed in its README.
-The skill's `author: vercel` metadata is preserved unchanged.
+The current review checklist is maintained in
+[`vercel-labs/web-interface-guidelines`](https://github.com/vercel-labs/web-interface-guidelines),
+whose MIT license and Vercel Labs copyright notice are preserved in
+[`skills/web-design-guidelines/LICENSE.txt`](skills/web-design-guidelines/LICENSE.txt).
+The local routing instructions are modified and the `author: vercel` metadata
+is preserved. No third-party checklist text is vendored in this package.
 
 All product names and trademarks belong to their respective owners. Inclusion
 does not imply endorsement by or affiliation with those owners.

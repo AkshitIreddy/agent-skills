@@ -5,3 +5,6 @@ Thumbs.db
 *.tmp
 .idea/
 .vscode/
+
+# Private company workflows are never part of the public skill collection.
+/skills/convai*/

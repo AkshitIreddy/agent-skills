@@ -1,117 +1,103 @@
 ---
 name: audio-verification
-description: Verify and debug synthesized audio (Web Audio API) by rendering it offline and measuring the samples, instead of guessing from code or claiming it works untested. Use whenever building, changing, or reviewing UI sound effects, tones, synths, or any AudioContext graph — and especially when sound is reported as "static", "noisy", "harsh", "crackly", "clicking", "popping", "too quiet", "distorted", or "not playing". Also use whenever you cannot hear the audio yourself, which is almost always.
+description: Measure synthesized Web Audio when implementing sound effects or diagnosing playback and sound-quality defects.
 ---
 
 # Audio verification
 
-Code that compiles is not sound that works. **You cannot hear anything, so an unmeasured audio change is an unverified one.** Reading the graph, passing typecheck, and "the node is connected" prove none of: it makes sound at all, it isn't a burst of noise, it doesn't click on attack, it isn't clipping, it isn't inaudibly quiet.
+An audio graph that compiles can still be silent, over-range, noisy, or abruptly
+cut off. Render it to samples when that will answer the reported problem, then
+exercise the actual app path for scheduling, lifecycle, and device behavior.
 
-The good news: audio is just numbers. Render the graph offline and every perceptual complaint becomes a measurement.
+## Evidence boundary
 
-## The rule
+Measurements can establish sample-level facts. They do not establish that a cue
+is pleasant, that a person heard it, or that the browser and output device played
+it correctly. Report those limits explicitly.
 
-Before saying a sound change is done, fixed, or good:
+For a changed cue:
 
-1. **Render it offline** — `OfflineAudioContext` gives you the exact samples, deterministically, far faster than real time.
-2. **Measure it** — peak, spectral flatness, onset, tail (see below).
-3. **A/B against the version you changed** — almost every judgement here is relative, not absolute.
-4. If it doesn't match intent, iterate. If you genuinely can't measure it, say so plainly instead of implying you checked.
+1. Render the real graph offline when practical. Prefer importing the production
+   module; if you reproduce the graph in a probe, disclose that it may drift.
+2. Measure the fields relevant to the symptom. Compare before and after under
+   identical settings when a meaningful baseline exists.
+3. Exercise the cue in the running app when the issue involves user gestures,
+   overlapping voices, scheduling, context state, or device changes.
+4. If the evidence cannot settle the complaint, report the result as a bounded
+   measurement or non-reproduction and identify the needed listening check.
 
-## Running the probe
+## Running the included probe
 
-`scripts/audio-probe.js` is a classic script (no imports) so it pastes straight into `page.evaluate()`, a browser-MCP `javascript_tool` call, or a devtools console. Evaluating it defines `globalThis.AudioProbe`.
+[`scripts/audio-probe.js`](scripts/audio-probe.js) is a classic script with no
+imports. Evaluate it in a browser page using an available browser automation,
+preview, test runner, or developer-console facility. It defines
+`globalThis.AudioProbe`.
 
 ```js
-// build(ctx, destination) wires and starts your nodes — anything you'd build live
-const m = await AudioProbe.measure((ctx, dest) => {
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0, 0);
-  g.gain.linearRampToValueAtTime(0.3, 0.02);
-  g.gain.exponentialRampToValueAtTime(0.0004, 0.4);
-  osc.connect(g).connect(dest);
-  osc.start(0); osc.stop(0.5);
+const metrics = await AudioProbe.measure((ctx, destination) => {
+  const oscillator = ctx.createOscillator();
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, 0);
+  gain.gain.linearRampToValueAtTime(0.3, 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0004, 0.4);
+  oscillator.connect(gain).connect(destination);
+  oscillator.start(0);
+  oscillator.stop(0.5);
 }, { seconds: 0.6 });
 
-// compare variants under identical conditions
-const table = await AudioProbe.compare({ before: buildOld, after: buildNew }, { seconds: 0.6 });
+const comparison = await AudioProbe.compare(
+  { before: buildOld, after: buildNew },
+  { seconds: 0.6 },
+);
 ```
 
-Any page will do — **`about:blank` is enough**, you don't need the real app to measure a graph. To measure the *real* code path, either import the module under test, or copy its graph verbatim into `build` (and say which you did; a hand-copied graph can drift from the source).
+`OfflineAudioContext` requires a browser-compatible Web Audio implementation.
+Use what the project or host already provides. Installing a browser engine or a
+Web Audio shim solely for a small check is optional and should be proportionate
+to the task.
 
-`OfflineAudioContext` is a browser API, so you need something that runs JS in a browser. In rough order of preference, use whichever the environment already has: a **browser/preview tool you can call directly** (open a blank page, then evaluate the probe plus your `build`); an existing **Playwright or Puppeteer** install (`page.evaluate`); or, if the project already depends on it, a Node Web Audio implementation. Prefer what's installed over installing a browser engine just to measure a sound — and if none is available, say so rather than reporting an unmeasured guess as verified.
+## Interpret the current metrics accurately
 
-Design tip worth suggesting: a sound module that accepts an injected `AudioContext` can be rendered offline directly, with no copying and no drift.
+The helper intentionally uses inexpensive heuristics rather than a perceptual
+audio model. Compare runs made with the same sample rate, duration, and options.
 
-## Reading the numbers
-
-| Metric | Reads as | Reference points |
+| Metric | What the helper computes | Safe interpretation |
 |---|---|---|
-| `flatness` | noisy vs tonal — **the static detector** | 0.00 pure sine · 0.07 filtered swish (fine) · **0.28 reported as "static"** · 0.56 raw white noise |
-| `peak` | clipping headroom | ≥1.0 will clip and distort. Offline render does **not** clamp, so a peak of 5.5 means 5.5 |
-| `clippedSamples` | how much is clipping | any non-zero is audible crunch |
-| `onsetRatio` | fraction of full level inside the first 1 ms — **the click detector** | 1.0 hard start (clicks) · 0.32 3 ms fade · 0.05 20 ms fade |
-| `attackMs` | time to reach 90% level | under ~1 ms clicks on almost any material |
-| `tailRms` | energy still present when the cue ends | high = chopped off mid-sound, which clicks on release |
-| `hissShare` | energy above 5 kHz | high = brittle/hissy character |
-| `centroidHz` | brightness | rises = brighter/harsher, falls = duller |
-| `rms` | perceived loudness, better than peak | match this when comparing versions |
-| `silent` | nothing came out | see the silence checklist below |
+| `silent` | Peak below `1e-6` | No meaningful samples appeared in this offline render. |
+| `peak` | Largest absolute sample | Output above full scale may be limited or clipped later in the playback chain; the floating-point offline render itself does not prove audible clipping. |
+| `clippedSamples` | Samples with magnitude `>= 0.999` | Count near the nominal full-scale boundary. It is a conservative warning, not proof that those samples were hard-clipped or audibly distorted. |
+| `rms` | Full-render root mean square | Relative level/energy for otherwise comparable cues; not a loudness standard. |
+| `flatness` | Geometric/arithmetic ratio over sampled Goertzel bands | Relative tonal-versus-noise-like character within the configured bands. Windowing, duration, and signal content affect it, so avoid universal thresholds. |
+| `hissShare` | Share of sampled band energy above the configured cutoff | Relative high-frequency content, not proof of audible hiss. |
+| `centroidHz` | Energy-weighted center of sampled bands | Relative brightness for comparable renders. |
+| `onsetRatio` | Largest raw sample in the first millisecond after the 1%-of-peak crossing, divided by global peak | Abrupt-start heuristic. Oscillator frequency and phase affect it; it is not an amplitude-envelope measurement. |
+| `attackMs` | Time from the first 1%-of-peak raw sample to the first 90%-of-peak raw sample | Raw-waveform rise heuristic. Do not apply a universal click threshold or compare signals with different pitch/phase as if it were an envelope. |
+| `tailRms` | RMS over roughly 10 ms before the last sample above 1% of peak | Abrupt-ending heuristic. It does not measure the final render window or prove a release click. Inspect the waveform boundary when that distinction matters. |
 
-**Flatness depends on the band settings**, so the absolute value only means something relative to another measurement from the same run. Always A/B rather than trusting a lone number.
+For click/pop investigations, inspect or calculate a short-window amplitude
+envelope and the discontinuity at the actual start/stop boundary in addition to
+the included onset and tail heuristics. For clipping investigations, distinguish
+samples that exceed nominal full scale from a waveform already flattened by a
+limiter or conversion stage. Render the real overlap pattern when several cues
+can play together.
 
-## Symptom to metric
+## Common Web Audio checks
 
-Start from what was reported — it narrows the search enormously.
+- Exponential ramps require positive endpoints; use a small positive floor and
+  a linear fade when starting from zero.
+- Parameter steps can create discontinuities. Schedule a short transition and
+  guard non-finite values.
+- A wide, low-Q bandpass can retain much of a noise source. Compare spectral
+  measures and level together when narrowing it.
+- Track active voices and confirm they return to zero. Exercise slow and rapid
+  interaction in the app when concurrency or cleanup is part of the complaint.
+- Confirm `AudioContext.state` when the cue fires. Autoplay policy may require a
+  trusted user gesture to start or resume audio.
+- Treat sleep and output-device changes as runtime cases. Recreate the context
+  only when the app observes a stale/closed context or its supported device event
+  indicates that recovery is needed.
 
-- **"It sounds like static / noise / a hiss"** → `flatness`. Noise pushed through a too-wide filter is still noise. A bandpass at `Q ≈ 1` barely filters; a sweeping band at `Q ≈ 4–8` reads as an airy swish. Check `hissShare` too.
-- **"It clicks / pops / ticks"** → `onsetRatio` and `attackMs` for the attack, `tailRms` for the release. Fix with a short fade-in (5–30 ms) and a decay that actually reaches near-zero before the source stops.
-- **"It crackles when several play at once"** → render the overlap and check `peak` / `clippedSamples`. Measure before assuming: cues are often so quiet that clipping is impossible and the real cause is elsewhere.
-- **"Too quiet / too loud after your change"** → compare `rms` and `peak` against the old build. Narrowing a filter throws away energy, so a "cleaner" version usually needs a gain bump to land at the same level.
-- **"No sound at all"** → `silent: true`. Check: the chain reaches `destination`; gain isn't 0; `start()` was called; the source didn't already end; an `exponentialRampToValueAtTime` didn't touch 0 (it can't — it silently breaks the envelope); the context isn't `suspended`.
-- **"It got worse but I can't say how"** → run `compare` on both and diff every field; something moved.
-
-## Tuning by sweep
-
-When a fix trades one quality against another (narrower filter = less noise but quieter), don't guess — sweep the parameters and pick by numbers, holding perceived level constant:
-
-```js
-const grid = [[3, 0.10], [4, 0.13], [5, 0.15], [7, 0.18]]; // [Q, gain]
-const variants = Object.fromEntries(grid.map(([q, gain]) => [`Q${q}_g${gain}`, buildWith(q, gain)]));
-const results = await AudioProbe.compare(variants, { seconds: 0.6 });
-// choose the lowest flatness whose peak/rms still matches the original
-```
-
-Matching the original level matters as much as fixing the defect: a fix that also makes the cue 4× quieter reads as a new bug.
-
-## Web Audio traps that cause these bugs
-
-Most "bad sound" bugs are one of these, and each has a measurable signature:
-
-- **`exponentialRampToValueAtTime` can never reach or start from 0.** Ramp to a small value like `0.0004`, and use `setValueAtTime(0, t)` + `linearRampToValueAtTime(peak, t + fade)` for the attack.
-- **Low-Q filters don't filter.** A bandpass exists to *remove* things; at `Q ≈ 1` it passes nearly everything, which is why noise-based cues end up sounding like raw static.
-- **Don't add a "safety limiter" reflexively.** Measure whether clipping is even possible first. Chromium's `DynamicsCompressorNode` is not transparent at low levels — measured on a quiet cue it cut the peak ~40%, quietening the sound while protecting against nothing.
-- **Writing `gain.value` mid-cue steps discontinuously** (an audible tick). Prefer `setTargetAtTime`. A non-finite value (`NaN` from an undefined setting) makes the output garbage — clamp and guard.
-- **Nodes that are never disconnected** accumulate in the graph. Count active voices and confirm the count returns to zero after cues finish.
-- **A long-lived `AudioContext` goes stale** when the output device changes or the machine sleeps — in Chromium it keeps reporting `running` while rendering garbage. Rebuild on `devicechange`, on `state === "closed"`, or when `currentTime` stops advancing.
-
-## Checking the live app, not just the graph
-
-Offline rendering proves the *sound*; it doesn't prove the app plays it correctly. In the running page, also confirm:
-
-- `ctx.state` is `running` (not `suspended`) at the moment cues fire.
-- The active-voice count returns to 0 after cues end — otherwise nodes are leaking.
-- Rapid interaction doesn't spawn unbounded voices — throttle high-frequency cues (hover) and cap concurrent ones.
-
-The same temporal limitation applies here as in motion QA: an offline waveform
-or one automated click cannot disprove an intermittent scheduling/device bug.
-Exercise slow and rapid sequences in the actual app and inspect context/voice
-lifecycle ordering. If the user still hears a repeatable glitch, report the
-probe as a non-reproduction rather than declaring the sound fixed.
-
-Two practical browser gotchas: an `AudioContext` needs a **real user gesture**, so click with an input-driving tool rather than dispatching a synthetic click; and under Vite, `import('/src/sound.ts')` resolves to a version-queried URL, giving you a **separate module instance** from the app's singleton — fine for exercising the class, misleading if you expect shared state.
-
-## Reporting
-
-Give the numbers, not adjectives — "flatness 0.283 → 0.073, peak held at 0.0035" is checkable; "sounds much better now" is not. When a metric can't settle a question (is this cue *pleasant*?), say that it needs a human ear rather than implying measurement covered it. If the person reports a sound bug you can't reproduce, ask **when** it happens — which interaction, which surface — since that usually identifies the one cue involved far faster than auditing every call site.
+Report measured numbers and the path exercised. Phrase conclusions at the same
+level as the evidence: for example, “peak fell from 1.18 to 0.82 in the offline
+render and the overlap probe completed,” rather than “the sound is fixed” when
+no listening or real-device check occurred.

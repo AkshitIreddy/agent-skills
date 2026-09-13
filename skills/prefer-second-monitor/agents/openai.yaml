@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prefer Second Monitor"
+  short_description: "Place Windows test windows on the second display"
+  default_prompt: "Use $prefer-second-monitor while launching and testing this Windows GUI."

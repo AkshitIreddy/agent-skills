@@ -1,91 +1,115 @@
 ---
 name: comfyui-assets
-description: Generate game/app art assets locally with ComfyUI and SDXL — seamless tileable textures, transparent-background cutouts, ornament stamps, wallpaper patterns. Use when producing material textures or sprite elements for a rendering pipeline, or when asked to create art assets with a local image model.
+description: Generate textures, cutouts, or coordinated bitmap assets when the task calls for local ComfyUI generation.
 ---
 
-# Generating assets with a local ComfyUI
+# ComfyUI assets
 
-Drive ComfyUI through its HTTP API. You do not need a plugin or MCP server — there are three endpoints.
+Use ComfyUI for bitmap generation when the project already has, or explicitly
+chooses, a local ComfyUI workflow. Prefer the project's existing server, models,
+custom nodes, and output conventions. Do not install models, custom nodes, or a
+separate integration merely because this skill was selected.
 
-## Talking to it
+Keep the server bound to loopback unless the user has requested and secured
+remote access. Custom nodes and model tooling execute third-party code locally;
+review their source and provenance before adding them to an environment.
 
-ComfyUI listens on `127.0.0.1:8188` by default. Start it headless from its venv:
+## Submit bounded jobs
 
-```
-python main.py --listen 127.0.0.1 --port 8188
-```
-
-The API takes a **workflow in "API format"** — a flat object of node-id → `{class_type, inputs}`. Export it from the UI with *Workflow → Export (API)*, or hand-author it; it is plain JSON.
+ComfyUI commonly exposes `/prompt`, `/history/{prompt_id}`, and `/view`. Submit a
+workflow in API format, retain every returned `prompt_id`, and bound both each
+HTTP request and the overall wait:
 
 ```js
-// queue
-const { prompt_id } = await (await fetch('http://127.0.0.1:8188/prompt', {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ prompt: workflow, client_id: clientId }),
-})).json();
-
-// poll until it appears in history
-let out;
-while (!out) {
-  const hist = await (await fetch(`http://127.0.0.1:8188/history/${prompt_id}`)).json();
-  out = hist[prompt_id];
-  if (!out) await new Promise((r) => setTimeout(r, 700));
+async function requestJson(url, init = {}) {
+  const response = await fetch(url, {
+    ...init,
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+  return response.json();
 }
 
-// fetch the produced files
-for (const node of Object.values(out.outputs)) {
-  for (const img of node.images ?? []) {
-    const url = `http://127.0.0.1:8188/view?filename=${encodeURIComponent(img.filename)}`
-      + `&subfolder=${encodeURIComponent(img.subfolder)}&type=${img.type}`;
-    // save the bytes
-  }
+const baseUrl = "http://127.0.0.1:8188";
+const queued = await requestJson(`${baseUrl}/prompt`, {
+  method: "POST",
+  headers: { "content-type": "application/json" },
+  body: JSON.stringify({ prompt: workflow, client_id: clientId }),
+});
+if (typeof queued.prompt_id !== "string" || !queued.prompt_id) {
+  throw new Error("ComfyUI did not return a prompt ID");
+}
+
+const deadline = Date.now() + 5 * 60_000;
+let result;
+while (Date.now() < deadline) {
+  const history = await requestJson(
+    `${baseUrl}/history/${encodeURIComponent(queued.prompt_id)}`,
+  );
+  result = history[queued.prompt_id];
+  if (result) break;
+  await new Promise((resolve) => setTimeout(resolve, 700));
+}
+if (!result) throw new Error(`Timed out waiting for ${queued.prompt_id}`);
+if (result.status?.status_str === "error" || result.status?.completed === false) {
+  throw new Error(`ComfyUI job ${queued.prompt_id} failed`);
 }
 ```
 
-Batch by looping the queue call with a different seed/prompt each time — ComfyUI queues them and works through the list. Keep a modest concurrency (queue depth of a few) rather than firing hundreds at once.
+Choose timeout values from the expected local model latency and batch size.
+A timeout ends the wait, not the server job. Check the owned job's state before
+retrying so a lost response does not create duplicate generation work.
+Inspect the returned status/messages when reporting a failure. Encode every
+`/view` query parameter and write response bytes only to a chosen output
+directory; never treat a server-returned filename or subfolder as a trusted
+local path.
 
-## Model choice
+On a shared server, delete only queued prompt IDs submitted by this task. The
+common `/interrupt` endpoint affects the active server job globally, so use it
+only on an isolated server or after confirming that the active job is yours.
+Keep a record of owned prompt IDs rather than clearing the whole queue or
+history.
 
-For **stylised** assets (illustration, painterly, game art), prefer **SDXL**: seconds per image, the deepest LoRA/ControlNet ecosystem. Reserve FLUX for when prompt adherence or legible text really matters — quantised it is roughly an order of magnitude slower per image, which dominates when you are generating and re-rolling a large library.
+## Select models by a local comparison
 
-VRAM guide: SDXL ~8GB, FLUX fp8 ~12GB, FLUX GGUF Q4/Q5 ~6–8GB.
+Inspect what is already installed, then render a small representative comparison
+when model choice affects quality or cost. Compare prompt adherence, style fit,
+latency, peak memory, and output consistency on the actual machine. SDXL, FLUX,
+and their variants have different strengths, but quantization, resolution,
+sampler, accelerator, and implementation can reverse generic speed or memory
+claims. Record the chosen model, workflow, seed, sampler, steps, and settings
+needed to reproduce shipped assets.
 
-## Seamless tiling
+## Match the asset pipeline
 
-Use **circular padding** in the sampler (ComfyUI: a "seamless"/tiling option or the `CircularVAEDecode`-style nodes; several tiling custom nodes expose it). Do **not** fake it by mirroring — mirrored tiles read as obviously symmetrical.
+- **Runtime-lit materials:** request flat, even illumination and reject baked
+  highlights or shadows that fight the runtime light. Baked lighting can be
+  intentional for unlit or stylized pipelines.
+- **Seamless textures:** use a workflow that provides circular/tiling behavior,
+  then inspect a 3×3 composite for seams and distracting repetition.
+- **Cutouts:** generate against a separable background, remove it with an
+  existing segmentation tool, trim transparent margins, and inspect edge halos
+  at final display scale.
+- **Libraries and variants:** hold the art direction and relevant generation
+  settings stable enough for coherence. Vary them deliberately when a local
+  comparison shows that one setup does not serve every asset class.
 
-Verify by compositing the result 3×3 and looking for a seam or an obvious repetition rhythm. Reject and re-roll rather than shipping a tile with a visible join.
+Generate only enough candidates to make the decision. Use contact sheets for
+large batches, inspect anomalies and likely rejects closely, and inspect every
+asset selected for shipping at its intended size and beside its siblings. Check
+dimensions, alpha, tiling where applicable, value range, compression, and file
+weight.
 
-Prompt hygiene for tiles: say *seamless tileable texture*, *top-down*, *flat even lighting*, *no shadows*, *no objects*. Negative-prompt vignettes, borders, frames and watermarks — models love adding them and they destroy tiling.
+## Publication and privacy
 
-## Flat lighting is a hard rule
+ComfyUI images can embed the workflow, prompt, model names, node configuration,
+and source paths in metadata. Before committing, publishing, or sending an
+asset, inspect the publication copy and remove metadata that is not intentionally
+part of the deliverable. Keep prompts, workflow JSON, seeds, input images, and
+model details private unless the user wants them distributed and they have been
+reviewed for credentials, personal data, private paths, and licensing terms.
 
-If the asset will be lit at runtime (any real-time shader, normal-mapped surface, or scene light), generate it **unlit**: flat even illumination, no baked highlight, no drop shadow. Baked lighting fights the scene light and instantly reads as pasted-on. Say so in the prompt and negative-prompt "dramatic lighting, shadows, highlights, rim light".
-
-## Cutouts with alpha
-
-Generate the subject centred on a plain flat background (pure white or chroma green), then remove it. `rembg` is the pragmatic choice; for hard cases use SAM-based segmentation. Afterwards: trim to the alpha bounding box, and check edges for a halo of the old background colour — despill or erode a pixel if present.
-
-Generate several rotations/variants of anything that will be scattered, or cloning becomes visible.
-
-## Style coherence across a library
-
-- Hold a **constant style suffix** in every prompt (medium, palette, lighting, edge quality) and vary only the subject.
-- Keep the **same model, sampler, steps and CFG** for the whole library.
-- Vary seeds, not settings — settings drift shows up as a foreign-looking asset.
-- Save the workflow JSON and prompts next to the output so any asset can be reproduced or re-rolled.
-
-## Quality gate before anything ships
-
-1. Tiles seamlessly (3×3 check) — if applicable.
-2. No baked lighting.
-3. Sits beside its siblings without looking foreign.
-4. Sensible file weight (downscale, webp, trim alpha).
-5. Real value range — not mid-tone mush, since lighting sculpts from this base.
-
-**Look at every asset.** Generation is cheap and lossy in quality terms; the gate is your eye, not the prompt.
-
-## If you want a full toolkit instead
-
-`artokun/comfyui-mcp` (MIT, actively maintained) ships an MCP server plus Claude Code plugin with a large tool surface and model-specific skills — install with `/plugin marketplace add artokun/comfyui-mcp` then `/plugin install comfy`. It runs third-party code locally, so treat it as a deliberate choice; for a fixed, repeated workflow the three endpoints above are usually enough.
+Preserve a reproducibility manifest in an approved project location when it is
+useful, but do not assume it belongs beside public assets. Report which outputs
+were visually inspected and which were assessed only through a contact sheet or
+automated checks.

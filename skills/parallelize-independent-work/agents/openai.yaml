@@ -1,4 +1,4 @@
 interface:
   display_name: "Parallelize Independent Work"
   short_description: "Delegate independent workstreams early and coordinate safely"
-  default_prompt: "Split independent parts of this task across subagents, coordinate shared state, and integrate verified results."
+  default_prompt: "Use $parallelize-independent-work to split independent parts of this task across subagents, coordinate shared state, and integrate verified results."

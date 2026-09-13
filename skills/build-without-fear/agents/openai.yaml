@@ -1,4 +1,4 @@
 interface:
   display_name: "Build Without Fear"
-  short_description: "Implement the complete possibility space"
-  default_prompt: "Use $build-without-fear to implement the exhaustive production-grade version."
+  short_description: "Build coherent state and recovery boundaries"
+  default_prompt: "Use $build-without-fear to implement the required subsystem with explicit state, ownership, and recovery."

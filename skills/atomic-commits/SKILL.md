@@ -1,39 +1,31 @@
 ---
 name: atomic-commits
-description: Commit discipline for every repository — small atomic commits, Conventional Commits messages, only commit working states. Use whenever creating git commits, splitting work into commits, or writing commit messages, in any project.
+description: Create focused, working Git commits with Conventional Commits messages.
 ---
 
-# Atomic commits with Conventional Commits
+# Atomic commits
 
-Rules for every commit in every repository, regardless of project or language.
+Follow the repository's contribution policy and the user's instructions.
+Otherwise use Conventional Commits with an imperative, specific summary:
 
-## Scope: one concern per commit
-
-- Each commit contains exactly one logical change: one feature, one fix, one refactor, one doc update. If the summary line needs "and", split the commit.
-- Never bundle unrelated changes (e.g. a bug fix plus a rename plus a dependency bump) — stage selectively (`git add -p`, per-file staging) so each commit stays scoped.
-- Prefer many small commits over one large one, but each commit must stand on its own: it should make sense in `git log` without the neighbors.
-
-## Only commit working states
-
-- Every commit should build/parse and leave the project in a coherent, non-broken state. Run the relevant build/tests before committing when practical.
-- Don't commit half-finished work as a checkpoint on shared branches. If a change can't work alone, fold it into the commit that completes it.
-- Never commit generated artifacts, secrets, or local-only config; keep `.gitignore` current as part of the change that introduces new artifact types.
-
-## Message format: Conventional Commits
-
-```
-<type>(<optional scope>): <imperative summary, lowercase, no trailing period>
-
-<optional body: what and why, wrapped ~72 cols>
+```text
+<type>(<optional scope>): <summary>
 ```
 
-- Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `build`, `ci`, `chore`, `style`, `revert`.
-- Scope is the area touched (`feat(engine): …`, `fix(ui): …`) — use it when the repo has distinct areas.
-- Summary ≤ 72 chars, imperative mood ("add", not "added"/"adds"), specific: `fix(parser): handle empty CSV cells` not `fix stuff`.
-- Body only when the diff doesn't explain itself — state the why, constraints, or tradeoffs, not a restatement of the diff.
-- Breaking changes: `!` after type/scope (`feat(api)!: …`) plus a `BREAKING CHANGE:` footer describing the migration.
+Common types include feat, fix, refactor, docs, test, build, ci, and chore.
+Keep the summary concise; use a body for the problem, behavior, or trade-off
+that the diff cannot explain. Mark actual compatibility breaks according to
+the repository's release convention.
 
-## Ordering
+Each commit should contain one coherent concern and leave a usable state.
+Stage only the intended files or hunks and preserve unrelated user changes.
+Combine dependent edits when splitting would create a broken intermediate
+state. Choose reviewable units rather than a target number of commits.
 
-- Commit infrastructure/scaffolding before the code that depends on it, so history replays cleanly.
-- Refactors that enable a feature go in their own `refactor:` commit before the `feat:` commit.
+Run relevant checks before committing. Inspect the staged diff for accidental
+files and sensitive content. Include generated files or configuration only
+when they are deliberately tracked and required by the repository; exclude
+temporary artifacts, credentials, and private machine state.
+
+Committing, pushing, and contacting reviewers have separate side effects.
+Carry out each only within the authorization provided for the task.

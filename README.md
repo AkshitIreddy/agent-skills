@@ -40,24 +40,23 @@ placing every instruction in every conversation.
 
 | Skill | Description |
 | --- | --- |
-| [`adversarial-refinement-loop`](skills/adversarial-refinement-loop) | Runs an open-ended, evidence-led cycle of research, adversarial critique, implementation, behavioral verification, and independent re-review until the user stops it. |
-| [`ambitious-implementation`](skills/ambitious-implementation) | Pushes craft-heavy UI, animation, graphics, theming, and sound work toward richer results through layered detail, bespoke treatment, and iterative refinement. |
-| [`atomic-commits`](skills/atomic-commits) | Keeps each commit to one logical concern, requires coherent working states, and applies clear Conventional Commits messages. |
-| [`audio-verification`](skills/audio-verification) | Verifies synthesized Web Audio by rendering it offline and measuring loudness, clipping, noise, onset, brightness, and tail behavior instead of guessing from code. |
-| [`build-and-look`](skills/build-and-look) | Shortens visual and audio feedback loops by building real artifacts early, comparing variations, and inspecting rendered evidence before polishing. |
-| [`build-without-fear`](skills/build-without-fear) | Structures ambitious production-grade implementations around explicit state spaces, coherent subsystems, recovery paths, diagnostics, and exhaustive verification. |
-| [`comfyui-assets`](skills/comfyui-assets) | Generates game and app art through local ComfyUI workflows, including seamless textures, flat-lit cutouts, alpha cleanup, style consistency, and visual quality gates. |
-| [`diagnosing-bugs`](skills/diagnosing-bugs) | Builds a fast deterministic reproduction loop, minimizes failures, tests ranked hypotheses, instruments one variable at a time, and seals fixes with regression coverage. |
-| [`finish-the-list`](skills/finish-the-list) | Keeps multi-item work moving until every item is finished or explicitly accounted for, with real verification and honest reporting of remaining gaps. |
-| [`frontend-design`](skills/frontend-design) | Guides distinctive, brief-specific frontend work through intentional color, typography, layout, motion, signature interactions, accessibility, and self-critique. |
-| [`parallelize-independent-work`](skills/parallelize-independent-work) | Finds independent outcomes early, assigns clearly owned subagent lanes, coordinates shared state, and requires reviewed integration and combined verification. |
-| [`playwright-qa`](skills/playwright-qa) | Uses an act-capture-inspect-decide loop for UI verification, including screenshots and measurable probes for flicker, state changes, settling, and performance. |
-| [`require-external-communication-approval`](skills/require-external-communication-approval) | Requires explicit approval immediately before human-facing messages while allowing otherwise-authorized repository and infrastructure work to continue. |
-| [`state-of-the-art-first`](skills/state-of-the-art-first) | Researches a broad, diverse evidence base before craft or fast-moving technical work, selects capable multi-stage techniques, and compares them with simpler baselines. |
-| [`try-it-first`](skills/try-it-first) | Prefers quick real-world experiments over speculation, then uses the observed result to explain and fix the underlying cause. |
-| [`visual-verification`](skills/visual-verification) | Requires rendered screenshots and actual pixel inspection for visual claims, with close-up coverage, motion caveats, and concrete design-quality checks. |
-| [`web-design-guidelines`](skills/web-design-guidelines) | Fetches Vercel's current Web Interface Guidelines and reports accessibility, performance, and UX findings in concise `file:line` form. |
-| [`writing-for-agents`](skills/writing-for-agents) | Makes agent-consumed documents more predictable through precise context pointers, progressive disclosure, completion criteria, invocation design, and disciplined pruning. |
+| [adversarial-refinement-loop](skills/adversarial-refinement-loop) | Run an indefinite critique, improvement, and verification loop when the user explicitly requests this mode. |
+| [atomic-commits](skills/atomic-commits) | Create focused, working Git commits with Conventional Commits messages. |
+| [audio-verification](skills/audio-verification) | Measure synthesized Web Audio when implementing sound effects or diagnosing playback and sound-quality defects. |
+| [build-without-fear](skills/build-without-fear) | Design a complete subsystem when requested or when recurring defects require explicit state, ownership, and recovery. |
+| [comfyui-assets](skills/comfyui-assets) | Generate textures, cutouts, or coordinated bitmap assets when the task calls for local ComfyUI generation. |
+| [diagnosing-bugs](skills/diagnosing-bugs) | Diagnose a reported defect or performance regression through reproduction, targeted probes, and causal verification. |
+| [finish-the-list](skills/finish-the-list) | Complete a requested backlog or multi-part deliverable without stopping after an intermediate milestone. |
+| [frontend-design](skills/frontend-design) | Design an interface or develop bespoke visual, motion, and audio craft when the brief requests a new direction or richer polish. |
+| [headless-terminal-workflow](skills/headless-terminal-workflow) | Keep Windows commands and helper processes hidden during local execution and application testing. |
+| [parallelize-independent-work](skills/parallelize-independent-work) | Delegate independently verifiable work when subagents can improve completion time or review quality. |
+| [prefer-second-monitor](skills/prefer-second-monitor) | Place task-owned Windows application windows on a secondary display when available and practical. |
+| [require-external-communication-approval](skills/require-external-communication-approval) | Check authorization before sending a direct message, review, comment, or other human-facing communication. |
+| [state-of-the-art-first](skills/state-of-the-art-first) | Research current techniques when selecting an unfamiliar or fast-changing approach for craft, rendering, audio, or ML. |
+| [try-it-first](skills/try-it-first) | Use a quick experiment or rendered prototype to resolve uncertain behavior or compare design alternatives. |
+| [visual-verification](skills/visual-verification) | Inspect rendered UI or graphics and verify affected interactions when implementing a visual change or auditing an interface. |
+| [web-design-guidelines](skills/web-design-guidelines) | Audit specified UI code against current Web Interface Guidelines for accessibility, performance, and UX. |
+| [writing-for-agents](skills/writing-for-agents) | Write or revise skills and agent instruction files with precise scope, useful references, and clear completion criteria. |
 
 ## Installation
 
@@ -70,15 +69,15 @@ cd agent-skills
 
 ### Codex
 
-For a user-level installation, copy one skill—or all of them—to the shared
-Agent Skills directory that current Codex versions scan:
+For a user-level Codex installation, copy one skill or the full collection
+to the personal skill directory:
 
 ```bash
-mkdir -p "$HOME/.agents/skills"
-cp -R skills/visual-verification "$HOME/.agents/skills/"
+mkdir -p "$HOME/.codex/skills"
+cp -R skills/visual-verification "$HOME/.codex/skills/"
 
 # Or install the full collection
-cp -R skills/* "$HOME/.agents/skills/"
+cp -R skills/* "$HOME/.codex/skills/"
 ```
 
 For one repository, copy the selected folders to `.agents/skills/` at the
@@ -89,8 +88,8 @@ directly:
 $skill-installer install https://github.com/AkshitIreddy/agent-skills/tree/main/skills/visual-verification
 ```
 
-Codex detects skill changes automatically; restart it if a new skill does not
-appear.
+Start a fresh task or reload Codex if its skill catalog still shows the old
+entries after installation.
 
 ### Claude Code
 
@@ -117,12 +116,21 @@ project. Their native locations are also supported:
 ### Windows PowerShell
 
 ```powershell
-New-Item -ItemType Directory -Force "$HOME/.agents/skills" | Out-Null
-Copy-Item -Recurse "skills/visual-verification" "$HOME/.agents/skills/"
+New-Item -ItemType Directory -Force "$HOME/.codex/skills" | Out-Null
+Copy-Item -Recurse "skills/visual-verification" "$HOME/.codex/skills/"
 ```
 
 After installation, ask for a matching task naturally or invoke the skill by
 name using the syntax supported by your agent.
+
+## Consolidation and upgrades
+
+The September 2026 update merges overlapping skills and narrows discovery
+descriptions. See [the migration notes](docs/astra-skill-consolidation.md).
+After backing up an existing installation, replace the public packages and
+remove the retired entries listed there. A copy-only installation leaves old
+skill folders discoverable. Preserve unrelated private skills and built-in or
+plugin-managed packages; they are outside this repository's installation scope.
 
 ## Repository structure
 
